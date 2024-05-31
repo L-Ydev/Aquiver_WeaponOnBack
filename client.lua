@@ -1,5 +1,4 @@
 -- Adapté pour l'inventaire Aquiver
-
 local SETTINGS = {
     back_bone = 24816,
     x = 0.075,
@@ -8,28 +7,26 @@ local SETTINGS = {
     x_rotation = 0.0,
     y_rotation = 165.0,
     z_rotation = 0.0,
-    compatible_weapon_hashes = {
-        -- Ajoutez vos armes compatibles ici
-        ["w_me_bat"] = -1786099057,
-        ["prop_ld_jerrycan_01"] = 883325847,
-        ["w_ar_carbinerifle"] = -2084633992,
-        ["w_ar_carbineriflemk2"] = GetHashKey("WEAPON_CARBINERIFLE_MK2"),
-        ["w_ar_assaultrifle"] = -1074790547,
-        ["w_ar_specialcarbine"] = -1063057011,
-        ["w_ar_bullpuprifle"] = 2132975508,
-        ["w_ar_advancedrifle"] = -1357824103,
-        ["w_sb_microsmg"] = 324215364,
-        ["w_sb_assaultsmg"] = -270015777,
-        ["w_sb_smg"] = 736523883,
-        ["w_sb_smgmk2"] = GetHashKey("WEAPON_SMG_MK2"),
-        ["w_sb_gusenberg"] = 1627465347,
-        ["w_sr_sniperrifle"] = 100416529,
-        ["w_sg_assaultshotgun"] = -494615257,
-        ["w_sg_bullpupshotgun"] = -1654528753,
-        ["w_sg_pumpshotgun"] = 487013001,
-        ["w_ar_musket"] = -1466123874,
-        ["w_sg_heavyshotgun"] = GetHashKey("WEAPON_HEAVYSHOTGUN"),
-        ["w_lr_firework"] = 2138347493
+    compatible_weapons = {
+        {name = "WEAPON_BAT", hash = -1786099057},
+        {name = "WEAPON_CARBINERIFLE", hash = -2084633992},
+        {name = "WEAPON_CARBINERIFLE_MK2", hash = GetHashKey("WEAPON_CARBINERIFLE_MK2")},
+        {name = "WEAPON_ASSAULTRIFLE", hash = -1074790547},
+        {name = "WEAPON_SPECIALCARBINE", hash = -1063057011},
+        {name = "WEAPON_BULLPUPRIFLE", hash = 2132975508},
+        {name = "WEAPON_ADVANCEDRIFLE", hash = -1357824103},
+        {name = "WEAPON_MICROSMG", hash = 324215364},
+        {name = "WEAPON_ASSAULTSMG", hash = -270015777},
+        {name = "WEAPON_SMG", hash = 736523883},
+        {name = "WEAPON_SMG_MK2", hash = GetHashKey("WEAPON_SMG_MK2")},
+        {name = "WEAPON_GUSENBERG", hash = 1627465347},
+        {name = "WEAPON_SNIPERRIFLE", hash = 100416529},
+        {name = "WEAPON_ASSAULTSHOTGUN", hash = -494615257},
+        {name = "WEAPON_BULLPUPSHOTGUN", hash = -1654528753},
+        {name = "WEAPON_PUMPSHOTGUN", hash = 487013001},
+        {name = "WEAPON_MUSKET", hash = -1466123874},
+        {name = "WEAPON_HEAVYSHOTGUN", hash = GetHashKey("WEAPON_HEAVYSHOTGUN")},
+        {name = "WEAPON_FIREWORK", hash = 2138347493}
     }
 }
 
@@ -37,52 +34,33 @@ local attached_weapons = {}
 
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1000) 
+        Citizen.Wait(1000)  
 
         local me = PlayerPedId()
-        local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
 
-        local weaponHashes = {}
-        for _, item in ipairs(inventoryItems) do
-            if item.type == "weapon" then
-                weaponHashes[GetHashKey(item.name)] = true
-            end
-        end
+        for _, weaponData in ipairs(SETTINGS.compatible_weapons) do
+            local res = exports["avp_inv_4"]:GetItemBy({
+                name = weaponData.name
+            })
 
-        print("Armes dans l'inventaire:")
-        for weaponHash, _ in pairs(weaponHashes) do
-            print(weaponHash)
-        end
-
-        for wep_name, wep_hash in pairs(SETTINGS.compatible_weapon_hashes) do
-            if weaponHashes[wep_hash] then
-                if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
-                    print("Attacher l'arme:", wep_name)
-                    AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation)
-                else
-                    print("L'arme est déjà attachée ou sélectionnée:", wep_name)
-                end
-            else
-                print("Le joueur ne possède pas l'arme:", wep_name)
+            if res then
+                AttachWeapon(weaponData.hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation)
             end
         end
     end
 end)
 
-function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR)
+function AttachWeapon(modelHash, boneNumber, x, y, z, xR, yR, zR)
     local bone = GetPedBoneIndex(PlayerPedId(), boneNumber)
-    RequestModel(attachModel)
-    while not HasModelLoaded(attachModel) do
+    RequestModel(modelHash)
+    while not HasModelLoaded(modelHash) do
         Wait(100)
     end
 
-    attached_weapons[attachModel] = {
-        hash = modelHash,
-        handle = CreateObject(GetHashKey(attachModel), 1.0, 1.0, 1.0, true, true, false)
-    }
+    local handle = CreateObject(modelHash, 1.0, 1.0, 1.0, true, true, false)
 
-    SetEntityCollision(attached_weapons[attachModel].handle, false, false)
-    AttachEntityToEntity(attached_weapons[attachModel].handle, PlayerPedId(), bone, x, y, z, xR, yR, zR, 1, 1, 0, 0, 2, 1)
+    SetEntityCollision(handle, false, false)
+    AttachEntityToEntity(handle, PlayerPedId(), bone, x, y, z, xR, yR, zR, 1, 1, 0, 0, 2, 1)
 
-    print("Arme attachée:", attachModel)
+    table.insert(attached_weapons, handle)
 end
