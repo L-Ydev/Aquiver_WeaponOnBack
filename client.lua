@@ -1,4 +1,3 @@
--- Ce script met certaines armes lourdes sur le dos d'un joueur lorsqu'elles ne sont pas sélectionnées mais sont encore dans la roue des armes.
 -- Adapté pour l'inventaire Aquiver
 
 local SETTINGS = {
@@ -38,7 +37,7 @@ local attached_weapons = {}
 
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1000)  
+        Citizen.Wait(1000) 
 
         local me = PlayerPedId()
         local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
@@ -60,7 +59,11 @@ Citizen.CreateThread(function()
                 if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
                     print("Attacher l'arme:", wep_name)
                     AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation)
+                else
+                    print("L'arme est déjà attachée ou sélectionnée:", wep_name)
                 end
+            else
+                print("Le joueur ne possède pas l'arme:", wep_name)
             end
         end
     end
