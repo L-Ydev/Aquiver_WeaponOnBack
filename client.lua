@@ -1,3 +1,6 @@
+-- Ce script met certaines armes lourdes sur le dos d'un joueur lorsqu'elles ne sont pas sélectionnées mais sont encore dans la roue des armes.
+-- Adapté pour l'inventaire Aquiver
+
 local SETTINGS = {
     back_bone = 24816,
     x = 0.075,
@@ -40,11 +43,16 @@ Citizen.CreateThread(function()
         local me = PlayerPedId()
         local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
 
-        print("Armes dans l'inventaire:")
+        local weaponHashes = {}
         for _, item in ipairs(inventoryItems) do
             if item.type == "weapon" then
-                print(item.name, ":", item.hash)
+                weaponHashes[GetHashKey(item.name)] = true
             end
+        end
+
+        print("Armes dans l'inventaire:")
+        for weaponHash, _ in pairs(weaponHashes) do
+            print(weaponHash)
         end
 
         for wep_name, wep_hash in pairs(SETTINGS.compatible_weapon_hashes) do
