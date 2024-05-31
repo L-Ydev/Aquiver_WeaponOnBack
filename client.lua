@@ -38,13 +38,11 @@ local attached_weapons = {}
 
 Citizen.CreateThread(function()
     while true do
-        -- Ralentir la boucle pour éviter le spam dans la console
-        Citizen.Wait(1000)  -- Ralentit la boucle à 1 seconde
+        Citizen.Wait(1000)  
 
         local me = PlayerPedId()
         local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
 
-        -- Convertir les items de l'inventaire en un ensemble de hash d'armes
         local weaponHashes = {}
         for _, item in ipairs(inventoryItems) do
             if item.type == "weapon" then
@@ -52,10 +50,12 @@ Citizen.CreateThread(function()
             end
         end
 
-        -- Attacher les armes si le joueur les possède
+        print("Armes dans l'inventaire:", json.encode(weaponHashes))
+
         for wep_name, wep_hash in pairs(SETTINGS.compatible_weapon_hashes) do
             if weaponHashes[wep_hash] then
                 if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
+                    print("Attacher l'arme:", wep_name)
                     AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation)
                 end
             end
@@ -77,4 +77,6 @@ function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR)
 
     SetEntityCollision(attached_weapons[attachModel].handle, false, false)
     AttachEntityToEntity(attached_weapons[attachModel].handle, PlayerPedId(), bone, x, y, z, xR, yR, zR, 1, 1, 0, 0, 2, 1)
+
+    print("Arme attachée:", attachModel)
 end
