@@ -9,32 +9,27 @@ local SETTINGS = {
     x_rotation = 0.0,
     y_rotation = 165.0,
     z_rotation = 0.0,
-    compatable_weapon_hashes = {
-        -- melee:
+    compatible_weapon_hashes = {
+        -- Ajoutez vos armes compatibles ici
         ["w_me_bat"] = -1786099057,
         ["prop_ld_jerrycan_01"] = 883325847,
-        -- assault rifles:
         ["w_ar_carbinerifle"] = -2084633992,
         ["w_ar_carbineriflemk2"] = GetHashKey("WEAPON_CARBINERIFLE_MK2"),
         ["w_ar_assaultrifle"] = -1074790547,
         ["w_ar_specialcarbine"] = -1063057011,
         ["w_ar_bullpuprifle"] = 2132975508,
         ["w_ar_advancedrifle"] = -1357824103,
-        -- sub machine guns:
         ["w_sb_microsmg"] = 324215364,
         ["w_sb_assaultsmg"] = -270015777,
         ["w_sb_smg"] = 736523883,
         ["w_sb_smgmk2"] = GetHashKey("WEAPON_SMG_MK2"),
         ["w_sb_gusenberg"] = 1627465347,
-        -- sniper rifles:
         ["w_sr_sniperrifle"] = 100416529,
-        -- shotguns:
         ["w_sg_assaultshotgun"] = -494615257,
         ["w_sg_bullpupshotgun"] = -1654528753,
         ["w_sg_pumpshotgun"] = 487013001,
         ["w_ar_musket"] = -1466123874,
         ["w_sg_heavyshotgun"] = GetHashKey("WEAPON_HEAVYSHOTGUN"),
-        -- launchers:
         ["w_lr_firework"] = 2138347493
     }
 }
@@ -43,49 +38,35 @@ local attached_weapons = {}
 
 Citizen.CreateThread(function()
     while true do
+        -- Ralentir la boucle pour éviter le spam dans la console
+        Citizen.Wait(1000)  -- Ralentit la boucle à 1 seconde
+
         local me = PlayerPedId()
         local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
-
-        -- Imprimer les items de l'inventaire pour vérifier
-        print("Inventaire:", json.encode(inventoryItems))
 
         -- Convertir les items de l'inventaire en un ensemble de hash d'armes
         local weaponHashes = {}
         for _, item in ipairs(inventoryItems) do
             if item.type == "weapon" then
                 weaponHashes[GetHashKey(item.name)] = true
-                print("Arme trouvée dans l'inventaire:", item.name)
             end
         end
 
-        -- Attacher si le joueur a une grande arme
-        for wep_name, wep_hash in pairs(SETTINGS.compatable_weapon_hashes) do
+        -- Attacher les armes si le joueur les possède
+        for wep_name, wep_hash in pairs(SETTINGS.compatible_weapon_hashes) do
             if weaponHashes[wep_hash] then
                 if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
-                    print("Attacher l'arme:", wep_name)
-                    AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation, isMeleeWeapon(wep_name))
+                    AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation)
                 end
             end
         end
-        
-        -- Supprimer du dos si équipé / abandonné
-        for name, attached_object in pairs(attached_weapons) do
-            if GetSelectedPedWeapon(me) == attached_object.hash or not weaponHashes[attached_object.hash] then
-                print("Supprimer l'arme:", name)
-                DeleteObject(attached_object.handle)
-                attached_weapons[name] = nil
-            end
-        end
-        
-        Wait(0)
     end
 end)
 
-function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR, isMelee)
+function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR)
     local bone = GetPedBoneIndex(PlayerPedId(), boneNumber)
     RequestModel(attachModel)
     while not HasModelLoaded(attachModel) do
-        print("Chargement du modèle:", attachModel)
         Wait(100)
     end
 
@@ -94,28 +75,6 @@ function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR, i
         handle = CreateObject(GetHashKey(attachModel), 1.0, 1.0, 1.0, true, true, false)
     }
 
-    if isMelee then 
-        x = 0.11 
-        y = -0.14 
-        z = 0.0 
-        xR = -75.0 
-        yR = 185.0 
-        zR = 92.0 
-    end
-    
-    if attachModel == "prop_ld_jerrycan_01" then 
-        x = x + 0.3 
-    end
-
     SetEntityCollision(attached_weapons[attachModel].handle, false, false)
     AttachEntityToEntity(attached_weapons[attachModel].handle, PlayerPedId(), bone, x, y, z, xR, yR, zR, 1, 1, 0, 0, 2, 1)
-    print("Arme attachée:", attachModel)
-end
-
-function isMeleeWeapon(wep_name)
-    local melee_weapons = {
-        ["w_me_bat"] = true,
-        ["prop_ld_jerrycan_01"] = true
-    }
-    return melee_weapons[wep_name] ~= nil
 end
