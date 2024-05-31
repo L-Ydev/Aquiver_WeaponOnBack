@@ -1,8 +1,4 @@
--- Ce script place certaines grandes armes sur le dos d'un joueur lorsqu'elles ne sont pas sélectionnées mais sont toujours dans leur roue des armes
-
--- initialement créé pour Returns: Los Angeles (https://discord.gg/NjeMNZME5A)
-
--- Ajoutez des armes à la table 'compatable_weapon_hashes' ci-dessous pour les faire apparaître sur le dos d'un joueur (vous pouvez utiliser GetHashKey(...) si vous ne connaissez pas le hash) --
+-- Ce script met certaines armes lourdes sur le dos d'un joueur lorsqu'elles ne sont pas sélectionnées mais sont encore dans la roue des armes.
 -- Adapté pour l'inventaire Aquiver
 
 local SETTINGS = {
@@ -55,8 +51,7 @@ local launchers = {
     ["w_lr_firework"] = 2138347493
 }
 
-
-
+-- Combinaison des catégories d'armes
 for category, weapons in pairs({melee_weapons, assault_rifles, sub_machine_guns, sniper_rifles, shotguns, launchers}) do
     for name, hash in pairs(weapons) do
         SETTINGS.compatable_weapon_hashes[name] = hash
@@ -68,17 +63,28 @@ local attached_weapons = {}
 Citizen.CreateThread(function()
     while true do
         local me = PlayerPedId()
+        local inventoryItems = exports["avp_inv_4"]:GetInventoryItems()
+
+        -- Convert inventory items to a set of weapon hashes
+        local weaponHashes = {}
+        for _, item in ipairs(inventoryItems) do
+            if item.type == "weapon" then
+                weaponHashes[GetHashKey(item.name)] = true
+            end
+        end
         
+        -- Attacher si le joueur a une grande arme
         for wep_name, wep_hash in pairs(SETTINGS.compatable_weapon_hashes) do
-            if HasPedGotWeapon(me, wep_hash, false) then
-                if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
+            if weaponHashes[wep_hash] and GetSelectedPedWeapon(me) ~= wep_hash then
+                if not attached_weapons[wep_name] then
                     AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.x, SETTINGS.y, SETTINGS.z, SETTINGS.x_rotation, SETTINGS.y_rotation, SETTINGS.z_rotation, isMeleeWeapon(wep_name))
                 end
             end
         end
         
+        -- Supprimer du dos si équipé / abandonné
         for name, attached_object in pairs(attached_weapons) do
-            if GetSelectedPedWeapon(me) == attached_object.hash or not HasPedGotWeapon(me, attached_object.hash, false) then
+            if GetSelectedPedWeapon(me) == attached_object.hash or not weaponHashes[attached_object.hash] then
                 DeleteObject(attached_object.handle)
                 attached_weapons[name] = nil
             end
